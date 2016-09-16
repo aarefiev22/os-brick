@@ -51,6 +51,17 @@ class NVMeoFabricConnector(base.BaseLinuxConnector):
     def get_volume_paths(self, connection_properties):
         raise NotImplementedError
 
+    def _get_nvme_portals_from_output(self, output):
+        return
+
+    def _discover_nvme_portals(self, connection_properties):
+        target_portal = connection_properties['target_portal']
+        port = connection_properties['target_port']
+        cmd = ['nvme', 'discover', '-t' 'rdma', '-a', target_portal, '-s', port]
+        (out, err) = self._execute(*cmd, root_helper=self._root_helper,
+                                                     run_as_root=True)
+        return self._discover_nvme_portals(out)
+
     @utils.trace
     def connect_volume(self, connection_properties):
         """Discover and attach the volume.
@@ -63,7 +74,17 @@ class NVMeoFabricConnector(base.BaseLinuxConnector):
         connection_properties for NVMe must include:
         TODO (e0ne): add connection_properties description
         """
-        raise NotImplementedError
+
+        device_info = {'type': 'block'}
+        nqn = connection_properties['target_nqn']
+        target_portal = connection_properties['target_portal']
+        port = connection_properties['target_port']
+        cmd = ['nvme', 'connect', '-t', 'rdma', '-n', nqn,
+               '-a', target_portal, '-s', port]
+        self._execute(*cmd, root_helper=self._root_helper,
+                                                      run_as_root=True)
+
+        device_info['path'] = '/some/path'
 
     @utils.trace
     def disconnect_volume(self, connection_properties, device_info):
