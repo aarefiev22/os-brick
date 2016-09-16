@@ -13,6 +13,7 @@
 #    under the License.
 
 import os
+import re
 
 from oslo_log import log as logging
 from oslo_service import loopingcall
@@ -52,7 +53,12 @@ class NVMeoFabricConnector(base.BaseLinuxConnector):
         raise NotImplementedError
 
     def _get_nvme_portals_from_output(self, output):
-        return
+        # TODO(e0ne): replace with better regexp
+        pattern =  r'subnqn:(.*)'
+        for line in output.split('\n'):
+            result = re.match(pattern, line)
+            if result:
+                return result.group(1).strip()
 
     def _discover_nvme_portals(self, connection_properties):
         target_portal = connection_properties['target_portal']
@@ -62,6 +68,19 @@ class NVMeoFabricConnector(base.BaseLinuxConnector):
                                                      run_as_root=True)
         return self._discover_nvme_portals(out)
 
+    def _get_nvme_devices(self):
+        nvme_devices = []
+        pattern = r'/dev/nvme[0-9]n[0-9]'
+        cmd = ['nvme', 'list']
+        (out, err) = self._execute(cmd, root_helper=self._root_helper, run_as_root=True)
+        for line in out.split('\n'):
+            result = re.match(pattern, line)
+            if result:
+                nvme_devices.append(result.group(0))
+
+        return nvme_devices
+
+    # TODO(e0ne): add lock
     @utils.trace
     def connect_volume(self, connection_properties):
         """Discover and attach the volume.
@@ -75,17 +94,24 @@ class NVMeoFabricConnector(base.BaseLinuxConnector):
         TODO (e0ne): add connection_properties description
         """
 
+        current_nvme_devices = self._get_nvme_devices()
+
         device_info = {'type': 'block'}
-        nqn = connection_properties['target_nqn']
+        nqn = self._discover_nvme_portals(connection_properties)
         target_portal = connection_properties['target_portal']
         port = connection_properties['target_port']
         cmd = ['nvme', 'connect', '-t', 'rdma', '-n', nqn,
                '-a', target_portal, '-s', port]
+
         self._execute(*cmd, root_helper=self._root_helper,
                                                       run_as_root=True)
+        # TODO(e0ne): find more propper solution for it once
+        # PoC is implemented
+        all_nvme_devices = self._get_nvme_devices()
+        path = list(set(current_nvme_devices)-set(all_nvme_devices))
+        device_info['path'] = path[0]
 
-        device_info['path'] = '/some/path'
-
+    # TODO(e0ne): add lock
     @utils.trace
     def disconnect_volume(self, connection_properties, device_info):
         """Detach and flush the volume.
@@ -99,7 +125,8 @@ class NVMeoFabricConnector(base.BaseLinuxConnector):
         connection_properties for NVMe must include:
         TODO (e0ne): add connection_properties description
         """
-        raise NotImplementedError
+        nqn = nqn = self._discover_nvme_portals(connection_properties)
+        cmd = ['nvme', 'disconnect', '-n', nqn]
 
     def extend_volume(self, connection_properties):
         # TODO(e0ne): is this possible?
