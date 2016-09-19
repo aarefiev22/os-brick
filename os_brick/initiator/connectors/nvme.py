@@ -12,16 +12,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import os
 import re
 
 from oslo_log import log as logging
-from oslo_service import loopingcall
 
-from os_brick import exception
 from os_brick import initiator
 
-from os_brick.i18n import _LI
 from os_brick.initiator.connectors import base
 from os_brick import utils
 
@@ -29,13 +25,13 @@ DEVICE_SCAN_ATTEMPTS_DEFAULT = 3
 LOG = logging.getLogger(__name__)
 
 
-class NVMeoFabricConnector(base.BaseLinuxConnector):
+class NVMeConnector(base.BaseLinuxConnector):
     """Connector class to attach/detach NVMe over fabric volumes."""
 
     def __init__(self, root_helper, driver=None,
                  device_scan_attempts=initiator.DEVICE_SCAN_ATTEMPTS_DEFAULT,
                  *args, **kwargs):
-        super(NVMeoFabricConnector, self).__init__(
+        super(NVMeConnector, self).__init__(
             root_helper,
             driver=driver,
             device_scan_attempts=device_scan_attempts,
@@ -54,7 +50,7 @@ class NVMeoFabricConnector(base.BaseLinuxConnector):
 
     def _get_nvme_portals_from_output(self, output):
         # TODO(e0ne): replace with better regexp
-        pattern =  r'subnqn:(.*)'
+        pattern = r'subnqn:(.*)'
         for line in output.split('\n'):
             result = re.match(pattern, line)
             if result:
@@ -63,16 +59,18 @@ class NVMeoFabricConnector(base.BaseLinuxConnector):
     def _discover_nvme_portals(self, connection_properties):
         target_portal = connection_properties['target_portal']
         port = connection_properties['target_port']
-        cmd = ['nvme', 'discover', '-t' 'rdma', '-a', target_portal, '-s', port]
+        cmd = ['nvme', 'discover', '-t' 'rdma',
+               '-a', target_portal, '-s', port]
         (out, err) = self._execute(*cmd, root_helper=self._root_helper,
-                                                     run_as_root=True)
+                                   run_as_root=True)
         return self._discover_nvme_portals(out)
 
     def _get_nvme_devices(self):
         nvme_devices = []
         pattern = r'/dev/nvme[0-9]n[0-9]'
         cmd = ['nvme', 'list']
-        (out, err) = self._execute(cmd, root_helper=self._root_helper, run_as_root=True)
+        (out, err) = self._execute(cmd, root_helper=self._root_helper,
+                                   run_as_root=True)
         for line in out.split('\n'):
             result = re.match(pattern, line)
             if result:
@@ -104,12 +102,14 @@ class NVMeoFabricConnector(base.BaseLinuxConnector):
                '-a', target_portal, '-s', port]
 
         self._execute(*cmd, root_helper=self._root_helper,
-                                                      run_as_root=True)
+                      run_as_root=True)
         # TODO(e0ne): find more propper solution for it once
         # PoC is implemented
         all_nvme_devices = self._get_nvme_devices()
-        path = list(set(current_nvme_devices)-set(all_nvme_devices))
+        path = list(set(all_nvme_devices) - set(current_nvme_devices))
         device_info['path'] = path[0]
+
+        return device_info
 
     # TODO(e0ne): add lock
     @utils.trace
@@ -125,8 +125,10 @@ class NVMeoFabricConnector(base.BaseLinuxConnector):
         connection_properties for NVMe must include:
         TODO (e0ne): add connection_properties description
         """
-        nqn = nqn = self._discover_nvme_portals(connection_properties)
+        nqn = self._discover_nvme_portals(connection_properties)
+        # TODO(e0ne): clarify command with manual
         cmd = ['nvme', 'disconnect', '-n', nqn]
+        self._execute(*cmd, root_helper=self._root_helper, run_as_root=True)
 
     def extend_volume(self, connection_properties):
         # TODO(e0ne): is this possible?
