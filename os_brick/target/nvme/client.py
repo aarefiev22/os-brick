@@ -17,14 +17,6 @@ import json
 
 from os_brick import exception
 
-SPDK_JSONRPC_IP_ADDRESS_BASE = '127.0.0.1'
-SPDK_JSONRPC_PORT_BASE = 5260
-SPDK_JSONRPC_INSTANCE_ID_BASE = 0
-
-
-class RPCException(Exception):
-    pass
-
 
 class NVMeRPCClient(object):
 
