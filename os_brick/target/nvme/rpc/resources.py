@@ -235,6 +235,10 @@ class NVMeTargetObject(object):
             raise exception.NVMeParamException(
                 validation_message='Total size must be > 0')
 
+        if not (block_size > 0):
+            raise exception.NVMeParamException(
+                validation_message='Block size must be > 0')
+
         num_blocks = (total_size * 1024 * 1024) / block_size
 
         return self.client.call(
