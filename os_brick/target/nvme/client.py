@@ -12,8 +12,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import requests
 import json
+import requests
 
 from os_brick import exception
 
@@ -21,10 +21,10 @@ from os_brick import exception
 class NVMeRPCClient(object):
 
     def __init__(self, ip_address='127.0.0.1', port=5260, instance_id=0):
-        self.url = "http://{ip_address}:{port}{instance_id}/jsonrpc".format(
-            ip_address=ip_address, port=port, instance_id=instance_id)
+        self.url = "http://{ip_address}:{port}/jsonrpc".format(
+            ip_address=ip_address, port=port + instance_id)
         self.headers = {'content-type': 'application/json'}
-        self.payload = {'jsonrpc': '2.0', 'id': 0}
+        self.payload = {'jsonrpc': '2.0', 'id': 1}
 
     def call(self, method, params):
         self.payload['method'] = method
@@ -36,6 +36,7 @@ class NVMeRPCClient(object):
             headers=self.headers).json()
 
         if 'error' in response:
-            raise exception.RPCException(message=response['error']['message'])
+            raise exception.NVMeRPCException(
+                message=response['error']['message'])
 
         return response

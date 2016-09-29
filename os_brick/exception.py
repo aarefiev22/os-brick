@@ -157,8 +157,8 @@ class VolumeEncryptionNotSupported(Invalid):
 
 
 class NVMeRPCException(BrickException):
-    message = _("RPC exception: %(message).")
+    message = _("RPC exception: %(message)s.")
 
 
 class NVMeParamException(BrickException):
-    message = _("Param validation exception: %(validation_message).")
+    message = _("Param validation exception: %(validation_message)s.")
