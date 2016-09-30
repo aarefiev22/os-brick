@@ -331,6 +331,77 @@ class NVMeTargetObject(object):
 
         return self.client.call('get_scsi_devices')
 
+    def construct_nvmf_subsystem(self, core, mode, nqn, listen_addresses, hosts,
+                                 pci_address, serial_number, namespaces):
+        """Add a nvmf subsystem.
+
+        :param core: The core Nvmf target run on.
+        :type core: int
+        :param mode: Target mode: Virtual or Direct.
+        :type mode: string
+        :param nqn: Target nqn(ASCII).
+        :type nqn: string
+        :param listen_addresses: List of Listen pairs. Example:
+                                 [{'transport’: ‘RDMA’,
+                                   ‘traddr’: ‘192.168.100.8’,
+                                   ‘trsvcid’: ‘4420’},
+                                 {‘transport’: ‘RDMA’,
+                                  ‘traddr’: ‘192.168.100.9’,
+                                  ‘trsvcid’: ‘4420’}]
+        :type listen_addresses: list of dicts
+        :param hosts: Host nqn list. Example:
+                      ['nqn.2016-06.io.spdk:init’,
+                       ‘nqn.2016-07.io.spdk:init'].
+        :type hosts: list of strings
+        :param pci_address: Valid if mode == Direct.
+                            Format:  'domain:device:function'
+                            Example: '0000:00:01.0'.
+        :type pci_address: string
+        :param serial_number: Valid if mode == Virtual.
+                              Format:  'sn'
+                              Example: 'SPDK00000000000001'.
+        :type serial_number: string
+        :param namespaces: List of namespaces.
+                           Example: 'Malloc0 Malloc1 Malloc2'
+                           *** The devices must pre-exist ***.
+        :type namespaces: list of strings
+        :returns: None
+        """
+
+        return self.client.call(
+            'construct_nvmf_subsystem', {
+                'core': core,
+                'mode': mode,
+                'nqn': nqn,
+                'listen_addresses': listen_addresses,
+                'hosts': hosts,
+                'pci_address': pci_address,
+                'serial_number': serial_number,
+                'namespaces': namespaces
+            })
+
+    def delete_nvmf_subsystem(self, nqn_name):
+        """DDelete a nvmf subsystem.
+
+        :param nqn_name: subsystem nqn to be deleted.
+                         Example: nqn.2016-06.io.spdk:cnode1.
+        :type nqn_name: string
+        :returns: None
+        """
+
+        return self.client.call(
+            'delete_nvmf_subsystem', {
+                'nqn': nqn_name
+            })
+
+    def get_nvmf_subsystems(self, target_node_name):
+        """Display nvmf subsystems.
+
+        :returns: dict -- nvmf_subsystem object
+        """
+
+        return self.client.call('get_nvmf_subsystems')
+
     def kill(self, sig_name):
         """Send signal to instance.
 

@@ -200,13 +200,40 @@ class NVMeTargetObjectTestCase(base.TestCase):
         self.nvme_target_objects.get_interfaces()
         self.client_mock.call.assert_called_once_with('get_interfaces')
 
-    def test_get_iscsi_connections(self):
+    def delete_nvmf_subsystem(self):
         self.nvme_target_objects.get_iscsi_connections()
         self.client_mock.call.assert_called_once_with('get_iscsi_connections')
 
     def test_get_scsi_devices(self):
         self.nvme_target_objects.get_scsi_devices()
         self.client_mock.call.assert_called_once_with('get_scsi_devices')
+
+    def test_construct_nvmf_subsystem(self):
+        self.nvme_target_objects.construct_nvmf_subsystem(
+            'target_name', 'target_alias', [1, 2], [10, 20],
+            ['Malloc0', 'Malloc1'], [0, 1], 64, 0, 0, 1, 1)
+        self.client_mock.call.assert_called_once_with(
+            'construct_nvmf_subsystem',
+            {
+                'name': 'target_name',
+                'alias_name': 'target_alias',
+                'pg_tags': [1, 2],
+                'ig_tags': [10, 20],
+                'lun_names': ['Malloc0', 'Malloc1'],
+                'lun_ids': [0, 1],
+                'queue_depth': 64,
+                'chap_disabled': 0,
+                'chap_required': 0,
+                'chap_mutual': 1,
+                'chap_auth_group': 1
+            }
+        )
+
+    def delete_nvmf_subsystem(self):
+        pass
+
+    def get_nvmf_subsystems(self):
+        pass
 
     def test_kill(self):
         self.nvme_target_objects.kill('SIGTERM')
