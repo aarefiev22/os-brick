@@ -208,6 +208,43 @@ class NVMeTargetObjectTestCase(base.TestCase):
         self.nvme_target_objects.get_scsi_devices()
         self.client_mock.call.assert_called_once_with('get_scsi_devices')
 
+    def test_construct_nvmf_subsystem(self):
+        self.nvme_target_objects.construct_nvmf_subsystem(
+            'direct', 'nqn.2016-06.io.spdk:cnode1',
+            [{
+                'transport': 'RDMA',
+                'traddr': '192.168.25.2',
+                'trsvcid': '4420'
+            }],
+            ['All'], '0000:00:03.0')
+        self.client_mock.call.assert_called_once_with(
+            'construct_nvmf_subsystem',
+            {
+                'mode': 'direct',
+                'nqn': 'nqn.2016-06.io.spdk:cnode1',
+                'listen_addresses': [{
+                    'transport': 'RDMA',
+                    'traddr': '192.168.25.2',
+                    'trsvcid': '4420'
+                }],
+                'hosts': ['All'],
+                'pci_address': '0000:00:03.0',
+                'serial_number': '0000:00:01.0',
+                'namespaces': 'Malloc0',
+                'core': 0
+            }
+        )
+
+    def delete_nvmf_subsystem(self):
+        self.nvme_target_objects.delete_nvmf_subsystem('nqn.2016-06.io.spdk:cnode1')
+        self.client_mock.call.assert_called_once_with(
+            'delete_nvmf_subsystem', {'nqn': 'nqn.2016-06.io.spdk:cnode1'}
+        )
+
+    def get_nvmf_subsystems(self):
+        self.nvme_target_objects.get_nvmf_subsystems()
+        self.client_mock.call.assert_called_once_with('get_nvmf_subsystems')
+
     def test_kill(self):
         self.nvme_target_objects.kill('SIGTERM')
         self.client_mock.call.assert_called_once_with(
